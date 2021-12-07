@@ -57,7 +57,7 @@ int main() {
 		while (!spaceHit) {
 			consoleUtils::locate(x,y); std::cout << '@'; // Output player
 			char c = getch(); // Get
-			consoleUtils::locate(18,3); std::cout << c;
+			consoleUtils::locate(19,4); std::cout << c;
 			consoleUtils::locate(x,y); std::cout << ' '; // Clean
 			switch (c) {
 				case 'z': --y; break;
@@ -85,7 +85,7 @@ int main() {
 		consoleUtils::locate(x,y); std::cout << '@'; // first display
 		while (!spaceHit) {
 			
-			consoleUtils::locate(7,4); std::cout << std::setfill('0') << std::setw(5) << cnt; // update cnt
+			consoleUtils::locate(8, 5); std::cout << std::setfill('0') << std::setw(5) << cnt; // update cnt
 
 			if (kbhit()) {
 				const char c = getch(); // Get character
@@ -101,11 +101,13 @@ int main() {
 				consoleUtils::locate(x,y); std::cout << '@'; // display
 			}
 
-			Sleep(10);
+			Sleep(1000);
 			++cnt;
 
 		}
 	}
+
+	// TODO: fix it as extended ascii not work on linux
 
 	consoleUtils::cls();
 	std::cout << "Test 10: extended ascii char" << std::endl;
@@ -115,6 +117,7 @@ int main() {
 		if (i % 10 == 0) std::cout << std::endl;
 	}
 	WAIT_ANY_KEY
+
 	consoleUtils::cls();
 	std::cout << "Test 11: border in extended ascii char" << std::endl << std::endl;
 	// '─' =  (char)196
@@ -130,7 +133,7 @@ int main() {
 
     for (int i = 0; i < 8; ++i) {
         std::cout << (char)179; 
-        consoleUtils::locate(9,i+3);
+        consoleUtils::locate(10,i+4);
         std::cout << (char)179 << std::endl;
     }
 

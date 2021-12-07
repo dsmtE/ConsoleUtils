@@ -24,15 +24,16 @@
 		// Here be magic.
 		struct termios oldt, newt;
 		int ch;
-		tcgetattr(STDIN_FILENO, &oldt);
-		newt = oldt;
-		newt.c_lflag &= ~(ICANON | ECHO);
-		tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+		tcgetattr(STDIN_FILENO, &oldt); /* grab old terminal i/o settings */
+		newt = oldt; /* make new settings same as old settings */
+		newt.c_lflag &= ~(ICANON | ECHO); /* disable buffered i/o and set no echo mode */
+		tcsetattr(STDIN_FILENO, TCSANOW, &newt); /* use these new terminal i/o settings now */
 		ch = getchar();
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		return ch;
 	}
 
+	// TODO: latency here to fix
 	/// Determines if keyboard has been hit.
 	/// Windows has this in conio.h
 	inline int kbhit(void) {
@@ -55,6 +56,7 @@
 		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 		return cnt; // Return number of characters
 	}
+
 #endif // _WIN32
 
 namespace consoleUtils {
@@ -131,7 +133,7 @@ namespace consoleUtils {
 		GetConsoleScreenBufferInfo(hConsole, &csbi);
 		SetConsoleTextAttribute(hConsole, (csbi.wAttributes & 0xFF0F) | (((WORD)c) << 4)); // Background colors take up the second-least significant byte
 #else
-		std::cout << getANSIBackgroundColor(c);
+		std::cout << AnsiFromBackgroundColor(c);
 #endif
 	}
 
@@ -162,8 +164,8 @@ namespace consoleUtils {
 		// Windows uses 0-based coordinates
 		// COORD coord;
 		// coord.X = (SHORT)(x - 1);
-		// coord.Y = (SHORT)(y - 1); 
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {x, y});
+		// coord.Y = (SHORT)(y - 1);
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {x-1, y-1});
 #else
 		std::cout << "\033[" << y << ";" << x << "H";
 #endif
