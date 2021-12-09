@@ -4,67 +4,86 @@
 #include <string>
 #include <cstdio>
 
+// for sleep function
+#include <chrono>
+#include <thread>
+
 #if defined(WIN32) || defined(WIN64)
 	#include <windows.h>  // for WinAPI
 	#include <conio.h>    // for getch() and kbhit()
-	#define getch _getch
-	#define kbhit _kbhit
-#else
-	#include <termios.h> // for getch() and kbhit()
-	#include <unistd.h> // for sleep()
-	#include <sys/ioctl.h> // for getkey()
-	#include <sys/types.h> // for kbhit()
-	#include <sys/time.h> // for kbhit()
 
-	#define Sleep(x) usleep((x)*1000)
+	namespace consoleUtils {
+		static WORD DefaultAttributes;
+		inline int Init() {
+			HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+			CONSOLE_SCREEN_BUFFER_INFO csbi;
+			GetConsoleScreenBufferInfo(hConsole, &csbi);
+			DefaultAttributes = csbi.wAttributes;
+			return 0;
+		}
 
-	/// Get character without waiting for Return to be pressed.
-	/// Windows has this in conio.h
-	inline int getch(void) {
-		// Here be magic.
-		struct termios oldt, newt;
-		int ch;
-		tcgetattr(STDIN_FILENO, &oldt); /* grab old terminal i/o settings */
-		newt = oldt; /* make new settings same as old settings */
-		newt.c_lflag &= ~(ICANON | ECHO); /* disable buffered i/o and set no echo mode */
-		tcsetattr(STDIN_FILENO, TCSANOW, &newt); /* use these new terminal i/o settings now */
-		ch = getchar();
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-		return ch;
+		inline int getChar(void) { return _getch(); }
+		inline int kbhit(void) { return _kbhit(); }
 	}
 
-	// TODO: latency here to fix
-	/// Determines if keyboard has been hit.
-	/// Windows has this in conio.h
-	inline int kbhit(void) {
-		// Here be dragons.
-		static struct termios oldt, newt;
-		int cnt = 0;
-		tcgetattr(STDIN_FILENO, &oldt);
-		newt = oldt;
-		newt.c_lflag    &= ~(ICANON | ECHO);
-		newt.c_iflag     = 0; // input mode
-		newt.c_oflag     = 0; // output mode
-		newt.c_cc[VMIN]  = 1; // minimum time to wait
-		newt.c_cc[VTIME] = 1; // minimum characters to wait for
-		tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-		ioctl(0, FIONREAD, &cnt); // Read count
-		struct timeval tv;
-		tv.tv_sec  = 0;
-		tv.tv_usec = 100;
-		select(STDIN_FILENO+1, NULL, NULL, NULL, &tv); // A small time delay
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-		return cnt; // Return number of characters
+#else
+	#include <termios.h>
+	#include <unistd.h>
+	#include <sys/ioctl.h>
+
+	namespace consoleUtils {
+		inline int Init() { return 0; }
+
+		/// Get character without waiting for Return to be pressed.
+		/// Windows has this in conio.h
+		inline int getChar(void) {
+			struct termios oldt, newt;
+			int ch;
+			tcgetattr(STDIN_FILENO, &oldt); /* grab old terminal i/o settings */
+			newt = oldt; /* make new settings same as old settings */
+			newt.c_lflag &= ~(ICANON | ECHO); /* disable buffered i/o and set no echo mode */
+			tcsetattr(STDIN_FILENO, TCSANOW, &newt); /* use these new terminal i/o settings now */
+			ch = getchar();
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			return ch;
+		}
+
+		// TODO: latency here to fix
+		// Determines if keyboard has been hit.
+		// Windows has this in conio.h
+		inline int kbhit(void) {
+			static struct termios oldt, newt;
+			int cnt = 0;
+			tcgetattr(STDIN_FILENO, &oldt);
+			newt = oldt;
+			newt.c_lflag    &= ~(ICANON | ECHO);
+			newt.c_iflag     = 0; // input mode
+			newt.c_oflag     = 0; // output mode
+			newt.c_cc[VMIN]  = 1; // minimum time to wait
+			newt.c_cc[VTIME] = 1; // minimum characters to wait for
+			tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+			ioctl(0, FIONREAD, &cnt); // Read count
+			struct timeval tv;
+			tv.tv_sec  = 0;
+			tv.tv_usec = 100;
+			select(STDIN_FILENO+1, NULL, NULL, NULL, &tv); // A small time delay
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+			return cnt; // Return number of characters
+		}
 	}
 
 #endif // _WIN32
 
 namespace consoleUtils {
+
+	const int init_error = Init();
+
+	inline void sleep(const unsigned int& ms) { std::this_thread::sleep_for(std::chrono::milliseconds(ms)); }
 	// https://docs.microsoft.com/en-us/windows/console/console-screen-buffers#character-attributes
 	enum class Color { BLACK, BLUE, GREEN, CYAN, RED, MAGENTA, BROWN, GREY, DARKGREY, LIGHTBLUE, LIGHTGREEN, LIGHTCYAN, LIGHTRED, LIGHTMAGENTA, YELLOW, WHITE };
 	enum class BackgroundColor { BLACK, RED, GREEN, YELLOW, BLUE, MAGENTA, CYAN, WHITE };
 
-	inline const char* AnsiFromColor(const Color c) {
+	inline const char* ansiFromColor(const Color c) {
 		switch (c) {
 			case Color::BLACK       : return "\033[22;30m";
 			case Color::BLUE        : return "\033[22;31m";
@@ -86,7 +105,7 @@ namespace consoleUtils {
 		}
 	}
 
-	inline const char* AnsiFromBackgroundColor(const BackgroundColor c) {
+	inline const char* ansiFromBackgroundColor(const BackgroundColor c) {
 		switch (c) {
 			case BackgroundColor::BLACK : return "\033[40m";
 			case BackgroundColor::RED : return "\033[41m";
@@ -110,35 +129,45 @@ namespace consoleUtils {
 	const char* ANSI_CURSOR_HOME        = "\033[H";
 
 	/// Non-blocking getch(). Returns 0 if no key was pressed.
-	inline int nb_getch(void) {
-		if (kbhit()) return getch();
+	inline int nb_getChar(void) {
+		if (kbhit()) return getChar();
 		else return 0;
 	}
 
-	inline void SetColor(const Color c) {
+	inline void setColor(const Color c) {
 #if defined(WIN32) || defined(WIN64)
 		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 		CONSOLE_SCREEN_BUFFER_INFO csbi;
 		GetConsoleScreenBufferInfo(hConsole, &csbi);
 		SetConsoleTextAttribute(hConsole, (csbi.wAttributes & 0xFFF0) | (WORD)c); // Foreground colors take up the least significant byte
 #else
-		std::cout << AnsiFromColor(c);
+		std::cout << ansiFromColor(c);
 #endif
 	}
 
-	inline void SetBackgroundColor(const BackgroundColor c) {
+	inline void setBackgroundColor(const BackgroundColor c) {
 #if defined(WIN32) || defined(WIN64)
 		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 		CONSOLE_SCREEN_BUFFER_INFO csbi;
 		GetConsoleScreenBufferInfo(hConsole, &csbi);
 		SetConsoleTextAttribute(hConsole, (csbi.wAttributes & 0xFF0F) | (((WORD)c) << 4)); // Background colors take up the second-least significant byte
 #else
-		std::cout << AnsiFromBackgroundColor(c);
+		std::cout << ansiFromBackgroundColor(c);
 #endif
 	}
 
+	inline void resetColors() {
+	#if defined(WIN32) || defined(WIN64)
+		HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+		SetConsoleTextAttribute(hConsole, DefaultAttributes);
+#else
+		std::cout << ANSI_ATTRIBUTE_RESET;
+#endif
+	}
+
+
 	// Clears screen, resets all attributes and moves cursor home.
-	inline void cls(void) {
+	inline void clear(void) {
 #if defined(WIN32) || defined(WIN64)
 		// Based on https://msdn.microsoft.com/en-us/library/windows/desktop/ms682022%28v=vs.85%29.aspx
 		const HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -159,13 +188,13 @@ namespace consoleUtils {
 #endif
 	}
 
-	inline void locate(const short int x, const short int y) {
+	inline void setCursorPos(const short int x, const short int y) {
 #if defined(WIN32) || defined(WIN64)
 		// Windows uses 0-based coordinates
-		// COORD coord;
-		// coord.X = (SHORT)(x - 1);
-		// coord.Y = (SHORT)(y - 1);
-		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), {x-1, y-1});
+		COORD coord;
+		coord.X = (SHORT)(x - 1);
+		coord.Y = (SHORT)(y - 1);
+		SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
 #else
 		std::cout << "\033[" << y << ";" << x << "H";
 #endif
