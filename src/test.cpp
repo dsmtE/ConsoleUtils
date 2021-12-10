@@ -108,41 +108,7 @@ int main() {
 		}
 	}
 
-	// TODO: fix it as extended ascii not work on linux
-
-	consoleUtils::clear();
-	std::cout << "Test 10: extended ascii char" << std::endl;
-
-	for (int i=0; i<257; i++) {
-		std::cout << "[" << i << " = " << (char)i << "] ";
-		if (i % 10 == 0) std::cout << std::endl;
-	}
-	WAIT_ANY_KEY
-
-	consoleUtils::clear();
-	std::cout << "Test 11: border in extended ascii char" << std::endl << std::endl;
-	// '─' =  (char)196
-	// '│' = (char)179
-	// '┌' = (char)218
-	// '┐' = (char)191
-	// '┘' = (char)217
-	// '└' = (char)192
-
-	std::cout << (char)218;  
-    for (int i = 0; i < 8; ++i) std::cout << (char)196;
-    std::cout << (char)191 << std::endl;
-
-    for (int i = 0; i < 8; ++i) {
-        std::cout << (char)179; 
-        consoleUtils::setCursorPos(10,i+4);
-        std::cout << (char)179 << std::endl;
-    }
-
-	std::cout << (char)192;
-    for (int i = 0; i < 8; ++i) std::cout << (char)196;
-    std::cout << (char)217 << std::endl;
-	
-	WAIT_ANY_KEY
+	// TODO: fix it as extended ascii not work on linux (use utf-8 unstead)
 
 	consoleUtils::clear();
 	std::cout << "All tests done. Bye!" << std::endl;
