@@ -139,6 +139,74 @@ int main() {
 	}
 
 	ConsoleUtils::clear();
+	std::cout << "Test 9: keyboard input using arrows keys and display allocated tab of char" << std::endl;
+	std::cout << "Hit Space to continue to the next test." << std::endl;
+	{
+		unsigned int textOffset = 2; // my call to setCursorPos must be shifted by 2 because I display 3 sentences above before.
+
+		struct Position {
+			unsigned int x;
+			unsigned int y;
+		};
+
+		// init my char tab
+		unsigned int width = 20;
+		unsigned int height = 8;
+		char* tab = (char*) malloc(sizeof(char) * width * height);
+
+		// fill my char tab with specific pattern 
+		for (unsigned int j=0; j<height; j++) {
+			for (unsigned int i=0; i<width; i++) {
+				tab[j*width+i] = (i%(width-1) == 0 || j%(height-1) == 0) ?  '#' : '.';
+			}
+		}
+
+		Position pos = {width / 2, height / 2};
+
+		// Display my tab at origin (0,0)
+		ConsoleUtils::setCursorPos(0, 0 + textOffset);
+		for (unsigned int j=0; j<height; j++) {
+			for (unsigned int i=0; i<width; i++) {
+				std::cout << tab[j*width+i];
+			}
+			std::cout << std::endl;
+		}
+
+		ConsoleUtils::setCursorPos(pos.x, pos.y + textOffset);
+		std::cout << '@'; // Output '@' at my position
+
+		bool exitLoop = false;
+		while (!exitLoop) {
+			bool special = false;
+			int c = ConsoleUtils::getChar(&special);
+
+			Position oldPos = pos;
+
+			if(special) {
+				switch (c) {
+					case ConsoleUtils::KEY_UP: if(pos.y>0) --pos.y; break;
+					case ConsoleUtils::KEY_DOWN: if(pos.y<height-1) ++pos.y; break;
+					case ConsoleUtils::KEY_LEFT: if(pos.x>0) --pos.x; break;
+					case ConsoleUtils::KEY_RIGHT: if(pos.x<width-1) ++pos.x; break;
+					default: break;
+				}
+			}else if (c == ' ') {
+				 exitLoop = true;
+			}
+
+			// if my position change
+			if(oldPos.x != pos.x || oldPos.y != pos.y) {
+				ConsoleUtils::setCursorPos(oldPos.x, oldPos.y + textOffset);
+				std::cout << tab[oldPos.y*width+oldPos.x]; // Clean up my current location by showing what is in my tab
+				ConsoleUtils::setCursorPos(pos.x, pos.y + textOffset);
+				std::cout << '@'; // Output '@' at my position
+			}
+		}
+		// important free my allocated memory
+		free(tab);
+	}
+
+	ConsoleUtils::clear();
 	std::cout << "All tests done. Bye!" << std::endl;
 	return 0;
 }
