@@ -22,9 +22,9 @@
         "xaver.clang-format",                 // Enables clang-format to automatically format your code
         "twxs.cmake",                         // Intellisense for CMake
         "ms-vscode.cmake-tools",              // Simply project compilation and debugging
-        "cschlosser.doxdocgen",               // Generate doxygen comments
 		"jeff-hykin.better-cpp-syntax",       // Improved C++ syntax highlighting
-        "coenraads.bracket-pair-colorizer-2"  // Color matching pairs of brackets ; makes your code more readable
+        "coenraads.bracket-pair-colorizer-2",  // Color matching pairs of brackets ; makes your code more readable
+		"ms-vsliveshare.vsliveshare"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
