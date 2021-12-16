@@ -47,6 +47,7 @@ class ConsoleUtils {
 	}
 
 	static int getChar(bool* special = nullptr) {
+		if (special != nullptr) *special = false;
 		int c = getOneChar();
 #if defined(_WIN32) || defined(_WIN64)
 		// https://www.it-swarm-fr.com/fr/c/codes-getch-et-arrow/1067145997/
